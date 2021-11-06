@@ -504,7 +504,6 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	cl_entity_t		*ent, *view;
 	int				i;
 	Vector			angles;
-	float			bobForward;
 	float			bobRight;
 	float			bobUp;
 	float			waterOffset;
@@ -534,12 +533,13 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	// view is the weapon model (only visible from inside body )
 	view = gEngfuncs.GetViewModel();
 
+	constexpr float BobFrequency = 1.0f;
+
 	// transform the view offset by the model's matrix to get the offset from
 	// model origin for the view
-	V_CalcBob( pparams, 1.00f, CalcBobMode::VB_SIN, bobTimes[0], bobRight, lastTimes[0] );
-	V_CalcBob( pparams, 2.00f, CalcBobMode::VB_COS, bobTimes[1], bobUp, lastTimes[1] );
-	V_CalcBob( pparams, 1.00f, CalcBobMode::VB_SIN, bobTimes[2], bobForward, lastTimes[2] );
-
+	V_CalcBob( pparams, BobFrequency, CalcBobMode::VB_SIN, bobTimes[0], bobRight, lastTimes[0] );
+	V_CalcBob( pparams, BobFrequency * 2.0f, CalcBobMode::VB_COS, bobTimes[1], bobUp, lastTimes[1] );
+	
 	// refresh position
 	VectorCopy ( pparams->simorg, pparams->vieworg );
 	pparams->vieworg[2] += bobUp * 0.5f;
@@ -671,12 +671,9 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	// Let the viewmodel shake at about 10% of the amplitude
 	gEngfuncs.V_ApplyShake( view->origin, view->angles, 0.9 );
 
-	for ( i = 0; i < 3; i++ )
-	{
-		view->origin[i] += bobRight * 0.33 * pparams->right[i];
-		view->origin[i] += bobUp * 0.17 * pparams->up[i];
-		//view->origin[i] += bobForward * 0.4 * pparams->forward[i];
-	}
+	view->angles[YAW] += bobRight * 1.0f;
+	view->angles[PITCH] += bobUp * 0.5f;
+	view->angles[ROLL] += bobRight * 1.0f;
 
 	view->origin.z += bobUp * 0.5f;
 
@@ -715,11 +712,6 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 		pparams->vieworg[2] -= 4.0f * leanFactor;
 		view->origin[2] -= 1.5f * leanFactor;
 	}
-
-	// throw in a little tilt.
-	//view->angles[YAW]   -= bobForward * 0.5;
-	//view->angles[ROLL]  -= bobForward * 1.0;
-	//view->angles[PITCH] -= bobForward * 0.3;
 
 	if (cl_bobtilt->value)
 	{
