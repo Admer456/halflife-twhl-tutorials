@@ -64,6 +64,8 @@ extern cvar_t* cl_rollangle;
 extern cvar_t* cl_rollspeed;
 extern cvar_t* cl_bobtilt;
 
+extern kbutton_t in_lean;
+
 #define	CAM_MODE_RELAX		1
 #define CAM_MODE_FOCUS		2
 
@@ -534,13 +536,13 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 
 	// transform the view offset by the model's matrix to get the offset from
 	// model origin for the view
-	V_CalcBob( pparams, 0.75f, CalcBobMode::VB_SIN, bobTimes[0], bobRight, lastTimes[0] );
-	V_CalcBob( pparams, 1.50f, CalcBobMode::VB_SIN, bobTimes[1], bobUp, lastTimes[1] );
+	V_CalcBob( pparams, 1.00f, CalcBobMode::VB_SIN, bobTimes[0], bobRight, lastTimes[0] );
+	V_CalcBob( pparams, 2.00f, CalcBobMode::VB_COS, bobTimes[1], bobUp, lastTimes[1] );
 	V_CalcBob( pparams, 1.00f, CalcBobMode::VB_SIN, bobTimes[2], bobForward, lastTimes[2] );
 
 	// refresh position
 	VectorCopy ( pparams->simorg, pparams->vieworg );
-	pparams->vieworg[2] += bobRight;
+	pparams->vieworg[2] += bobUp * 0.5f;
 	VectorAdd( pparams->vieworg, pparams->viewheight, pparams->vieworg );
 
 	VectorCopy ( pparams->cl_viewangles, pparams->viewangles );
@@ -552,7 +554,7 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	// dissapear when viewed with the eye exactly on it.
 	// FIXME, we send origin at 1/128 now, change this?
 	// the server protocol only specifies to 1/16 pixel, so add 1/32 in each axis
-	
+
 	pparams->vieworg[0] += 1.0/32;
 	pparams->vieworg[1] += 1.0/32;
 	pparams->vieworg[2] += 1.0/32;
@@ -673,10 +675,46 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	{
 		view->origin[i] += bobRight * 0.33 * pparams->right[i];
 		view->origin[i] += bobUp * 0.17 * pparams->up[i];
-		view->origin[i] += bobForward * 0.4 * pparams->forward[i];
+		//view->origin[i] += bobForward * 0.4 * pparams->forward[i];
 	}
 
-	view->origin.z += bobRight;
+	view->origin.z += bobUp * 0.5f;
+
+	static float leanFactor = 0.0f;
+
+	if ( in_lean.state & 1 )
+	{
+		leanFactor += pparams->frametime * 2.5f;
+		if ( leanFactor > 1.0f )
+			leanFactor = 1.0f;
+	}
+	else
+	{
+		leanFactor -= pparams->frametime * 2.5f;
+		if ( leanFactor < 0.0f )
+			leanFactor = 0.0f;
+	}
+
+	{
+		// Displace the view origin on a 2D plane
+			// according to the player's yaw angle
+		Vector offset{
+			std::cosf( view->angles[YAW] * (M_PI / 180.0f) ),
+			std::sinf( view->angles[YAW] * (M_PI / 180.0f) ),
+			0.0f
+		};
+
+		// i will only be 0 and 1 because we're only displacing XY, not XY and Z here
+		for ( i = 0; i < 2; i++ )
+		{
+			pparams->vieworg[i] += 32.0f * leanFactor * offset[i];
+			view->origin[i] += 33.5f * leanFactor * offset[i];
+		}
+
+		// Z is displaced separately
+		pparams->vieworg[2] -= 4.0f * leanFactor;
+		view->origin[2] -= 1.5f * leanFactor;
+	}
 
 	// throw in a little tilt.
 	//view->angles[YAW]   -= bobForward * 0.5;

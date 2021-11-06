@@ -111,6 +111,7 @@ kbutton_t	in_alt1;
 kbutton_t	in_score;
 kbutton_t	in_break;
 kbutton_t	in_graph;  // Display the netgraph
+kbutton_t	in_lean;
 
 typedef struct kblist_s
 {
@@ -978,6 +979,9 @@ void InitInput ()
 	gEngfuncs.pfnAddCommand ("-graph", IN_GraphUp);
 	gEngfuncs.pfnAddCommand ("+break",IN_BreakDown);
 	gEngfuncs.pfnAddCommand ("-break",IN_BreakUp);
+
+	gEngfuncs.pfnAddCommand( "+lean", [] { KeyDown( &in_lean ); } );
+	gEngfuncs.pfnAddCommand( "-lean", [] { KeyUp( &in_lean ); } );
 
 	lookstrafe			= gEngfuncs.pfnRegisterVariable ( "lookstrafe", "0", FCVAR_ARCHIVE );
 	lookspring			= gEngfuncs.pfnRegisterVariable ( "lookspring", "0", FCVAR_ARCHIVE );
