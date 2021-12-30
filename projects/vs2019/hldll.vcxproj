@@ -132,6 +132,7 @@
     <ClCompile Include="..\..\dlls\explode.cpp" />
     <ClCompile Include="..\..\dlls\flyingmonster.cpp" />
     <ClCompile Include="..\..\dlls\func_break.cpp" />
+    <ClCompile Include="..\..\dlls\func_slidicle.cpp" />
     <ClCompile Include="..\..\dlls\func_tank.cpp" />
     <ClCompile Include="..\..\dlls\game.cpp" />
     <ClCompile Include="..\..\dlls\gamerules.cpp" />
